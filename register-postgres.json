@@ -1,0 +1,14 @@
+{
+    "name": "kitchen-connector",
+    "config": {
+        "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+        "tasks.max": "1",
+        "database.hostname": "postgres",
+        "database.port": "5432",
+        "database.user": "postgres",
+        "database.password": "postgres",
+        "database.dbname": "kitchen_db",
+        "database.server.name": "kitchen",
+        "table.include.list": "public.items"
+    }
+}

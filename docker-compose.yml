@@ -1,0 +1,72 @@
+version: "3.9"
+   
+services:
+  kitchen:
+    build: .
+    container_name: kitchen_app
+    command: >
+      sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8090"
+    volumes:
+      - .:/app
+    links: 
+      - postgres:postgres
+    ports:
+      - "8090:8090"
+    depends_on: 
+      - postgres
+      - kafka
+    environment:
+      - DEBUG=True
+      - PORT=8090
+
+  zookeeper:
+    container_name: zookeeper
+    image: debezium/zookeeper:${DEBEZIUM_VERSION}
+    ports:
+     - 2181:2181
+     - 2888:2888
+     - 3888:3888
+
+  kafka:
+    container_name: kafka
+    image: debezium/kafka:${DEBEZIUM_VERSION}
+    ports:
+     - 9092:9092
+    links:
+     - zookeeper:zookeeper
+    depends_on: 
+     - zookeeper
+    environment:
+     - ZOOKEEPER_CONNECT=zookeeper:2181
+
+  postgres:
+    container_name: postgres
+    image: debezium/example-postgres:${DEBEZIUM_VERSION}
+    ports:
+     - 5432:5432
+    environment:
+     - POSTGRES_DB=kitchen_db
+     - POSTGRES_USER=postgres
+     - POSTGRES_PASSWORD=postgres
+    volumes: 
+     - kitchen_db_data:/var/lib/postgresql/data
+
+  connect:
+    container_name: connect
+    image: debezium/connect:${DEBEZIUM_VERSION}
+    ports:
+     - 8083:8083
+    links:
+     - kafka
+     - postgres
+    depends_on: 
+     - kafka
+    environment:
+     - BOOTSTRAP_SERVERS=kafka:9092
+     - GROUP_ID=1
+     - CONFIG_STORAGE_TOPIC=my_connect_configs
+     - OFFSET_STORAGE_TOPIC=my_connect_offsets
+     - STATUS_STORAGE_TOPIC=my_connect_statuses
+
+volumes:
+  kitchen_db_data:
